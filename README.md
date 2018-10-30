@@ -1,8 +1,12 @@
 # readability
 
+[![Build Status](https://travis-ci.org/joenas/readability.cr.svg?branch=master)](https://travis-ci.org/joenas/readability.cr)
+
 Crystal port of @cantino's [port](https://github.com/cantino/ruby-readability) of arc90's readability project
 
-**Still a WIP!** `document#images` is not implemented. Specs are not passing and some parts of them are probably incorrect...
+**Still a WIP!** 
+
+`document#images` is not implemented. Specs are not passing and some parts of them are probably incorrect...
 There's also a monkey patch for `LibXML` while waiting for the changes in https://github.com/crystal-lang/crystal/pull/6910) to be released.
 
 ## Installation
@@ -19,31 +23,26 @@ dependencies:
 
 ```crystal
 require "readability"
+require "http/client"
+
+response = HTTP::Client.get "http://www.example.com"
+
+document = Readability::Document.new(response.body)
+
+puts document.content
+puts document.meta_image
+
+
+# With Options
+
+options = Readability::Options.new(
+  tags: %w[article p span div document b strong em h1 h2 h3 h4],
+  remove_empty_nodes: true,
+  attributes: %w[],
+  blacklist: %w[figcaption figure]
+)
+document = Readability::Document.new(response.body, options)
 ```
-
-Example
--------
-
-    require "http/client"
-
-    response = HTTP::Client.get "http://www.example.com"
-
-    document = Readability::Document.new(response.body)
-
-    puts document.content
-    puts document.meta_image
-
-
-    # With Options
-
-    options = Readability::Options.new(
-      tags: %w[article p span div document b strong em h1 h2 h3 h4],
-      remove_empty_nodes: true,
-      attributes: %w[],
-      blacklist: %w[figcaption figure]
-    )
-    document = Readability::Document.new(response.body, options)
-
 
 Options
 -------
