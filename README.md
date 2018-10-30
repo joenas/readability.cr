@@ -16,7 +16,7 @@ Add this to your application's `shard.yml`:
 ```yaml
 dependencies:
   readability:
-    github: joenas/readability
+    github: joenas/readability.cr
 ```
 
 ## Usage
