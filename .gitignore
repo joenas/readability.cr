@@ -1,0 +1,11 @@
+/docs/
+/lib/
+/bin/
+/.shards/
+*.dwarf
+.DS_Store
+spec/fixtures/njus
+
+# Libraries don't need dependency lock
+# Dependencies will be locked in application that uses them
+/shard.lock

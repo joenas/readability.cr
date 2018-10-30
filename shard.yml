@@ -1,0 +1,9 @@
+name: readability
+version: 0.1.0
+
+authors:
+  - joenas <jon@jonnev.se>
+
+crystal: 0.26.1
+
+license: MIT
