@@ -281,8 +281,7 @@ describe Readability do
   end
 
   it "inserting space for block elements" do
-    options = Readability::Options.new(min_text_length: 0, retry_length: 1)
-    doc = Readability::Document.new(<<-HTML
+    html = <<-HTML
       <html><head><title>title!</title></head>
         <body>
           <div>
@@ -291,7 +290,8 @@ describe Readability do
         </body>
       </html>
     HTML
-    , options)
+    options = Readability::Options.new(min_text_length: 0, retry_length: 1)
+    doc = Readability::Document.new(html, options)
 
     it "should not return the sidebar" do
       doc.content.to_s.should_not match("a b c d f")
@@ -300,7 +300,7 @@ describe Readability do
 
   it "outputs good stuff for known documents" do
     html_files = Dir.glob(File.dirname(__FILE__) + "/fixtures/samples/*.html")
-    samples = html_files.map {|filename| File.basename(filename, ".html") }
+    samples = html_files.map { |filename| File.basename(filename, ".html") }
 
     it "should output expected fragments of text" do
       checks = 0
@@ -309,7 +309,7 @@ describe Readability do
         doc = Readability::Document.new(html).content.not_nil!
         yaml = File.read(File.dirname(__FILE__) + "/fixtures/samples/#{sample}-fragments.yml")
         data = Fragments.from_yaml(yaml)
-        #puts "testing #{sample}..."
+        # puts "testing #{sample}..."
 
         data.required_fragments.each do |required_text|
           doc.should contain(required_text)
@@ -321,7 +321,7 @@ describe Readability do
           checks += 1
         end
       end
-      #puts "Performed #{checks} checks."
+      # puts "Performed #{checks} checks."
     end
   end
 
