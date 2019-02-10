@@ -4,7 +4,7 @@
 
 Crystal port of @cantino's [port](https://github.com/cantino/ruby-readability) of arc90's readability project
 
-**Still a WIP!** 
+**Still a WIP!**
 
 `document#images` is not implemented. Specs are not passing and some parts of them are probably incorrect...
 There's also a monkey patch for `LibXML` while waiting for the changes in https://github.com/crystal-lang/crystal/pull/6910) to be released.
@@ -17,6 +17,7 @@ Add this to your application's `shard.yml`:
 dependencies:
   readability:
     github: joenas/readability.cr
+    version: 0.2.0
 ```
 
 ## Usage
