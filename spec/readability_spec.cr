@@ -56,7 +56,7 @@ describe Readability do
     </html>
   HTML
 
-  it "transformMisusedDivsIntoParagraphs" do
+  context "transformMisusedDivsIntoParagraphs" do
     it "should transform divs containing no block elements into <p>s" do
       doc = Readability::Document.new(simple_html_fixture)
       doc.transform_misused_divs_into_paragraphs!
@@ -70,7 +70,7 @@ describe Readability do
     end
   end
 
-  it "author" do
+  context "author" do
     it "should pick up <meta name='dc.creator'></meta> as an author" do
       doc = Readability::Document.new(<<-HTML)
         <html>
@@ -139,7 +139,7 @@ describe Readability do
     end
   end
 
-  it "score_node" do
+  context "score_node" do
     doc = Readability::Document.new(<<-HTML)
       <html>
         <body>
@@ -168,7 +168,7 @@ describe Readability do
     end
   end
 
-  it "remove_unlikely_candidates!" do
+  context "remove_unlikely_candidates!" do
     doc = Readability::Document.new(simple_html_fixture)
     doc.remove_unlikely_candidates!
 
@@ -185,7 +185,7 @@ describe Readability do
     end
   end
 
-  it "score_paragraphs" do
+  context "score_paragraphs" do
     doc = Readability::Document.new(<<-HTML)
       <html>
         <head>
@@ -243,7 +243,7 @@ describe Readability do
     end
   end
 
-  it "the cant_read.html fixture" do
+  context "the cant_read.html fixture" do
     it "should work on the cant_read.html fixture with some allowed tags" do
       allowed_tags = %w[div span table tr td p i strong u h1 h2 h3 h4 pre code br a]
       allowed_attributes = %w[href]
@@ -253,7 +253,7 @@ describe Readability do
     end
   end
 
-  it "general functionality" do
+  context "general functionality" do
     options = Readability::Options.new(min_text_length: 0, retry_length: 1)
     doc = Readability::Document.new("<html><head><title>title!</title></head><body><div><p>Some content</p></div></body>", options)
 
@@ -270,7 +270,7 @@ describe Readability do
     end
   end
 
-  it "ignoring sidebars" do
+  context "ignoring sidebars" do
     options = Readability::Options.new(min_text_length: 0, retry_length: 1)
     doc = Readability::Document.new("<html><head><title>title!</title></head><body><div><p>Some content</p></div><div class=\"sidebar\"><p>sidebar<p></div></body>",
       options)
@@ -280,7 +280,7 @@ describe Readability do
     end
   end
 
-  it "inserting space for block elements" do
+  context "inserting space for block elements" do
     html = <<-HTML
       <html><head><title>title!</title></head>
         <body>
@@ -298,7 +298,7 @@ describe Readability do
     end
   end
 
-  it "outputs good stuff for known documents" do
+  context "outputs good stuff for known documents" do
     html_files = Dir.glob(File.dirname(__FILE__) + "/fixtures/samples/*.html")
     samples = html_files.map { |filename| File.basename(filename, ".html") }
 
@@ -350,7 +350,7 @@ describe Readability do
     end
   end
 
-  it "#make_html" do
+  context "#make_html" do
     it "should strip the html comments tag" do
       doc = Readability::Document.new("<html><head><meta http-equiv=\"content-type\" content=\"text/html; charset=LATIN1\"></head><body><div>hi!<!-- bye~ --></div></body></html>")
       content = doc.content
@@ -368,7 +368,7 @@ describe Readability do
     end
   end
 
-  it "No side-effects" do
+  context "No side-effects" do
     bbc = File.read(File.dirname(__FILE__) + "/fixtures/bbc.html")
     nytimes = File.read(File.dirname(__FILE__) + "/fixtures/nytimes.html")
     thesum = File.read(File.dirname(__FILE__) + "/fixtures/thesun.html")
@@ -396,7 +396,7 @@ describe Readability do
     end
   end
 
-  it "Code blocks" do
+  context "Code blocks" do
     code = File.read(File.dirname(__FILE__) + "/fixtures/code.html")
     options = Readability::Options.new(tags: %w[div p img a ul ol li h1 h2 h3 h4 h5 h6 blockquote strong em b code pre],
       attributes: %w[src href],
@@ -413,7 +413,7 @@ describe Readability do
     end
   end
 
-  it "remove all tags" do
+  context "remove all tags" do
     options = Readability::Options.new(tags: [] of String)
 
     it "should work for an incomplete piece of HTML" do
@@ -433,7 +433,7 @@ describe Readability do
     end
   end
 
-  it "boing boing" do
+  context "boing boing" do
     boing_boing = File.read(File.dirname(__FILE__) + "/fixtures/boing_boing.html")
 
     # crystal author: I don't understand this spec :/
@@ -465,7 +465,7 @@ describe Readability do
     end
   end
 
-  it "clean_conditionally_reason?" do
+  context "clean_conditionally_reason?" do
     list_fixture = "<div><p>test</p>#{"<li></li>" * 102}"
 
     it "does not raise error" do
