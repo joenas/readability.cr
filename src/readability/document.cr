@@ -4,17 +4,17 @@ module Readability
     PARSE_OPTS = XML::HTMLParserOptions::NODEFDTD | XML::HTMLParserOptions::NOIMPLIED | XML::HTMLParserOptions::NOBLANKS
 
     REGEXES = {
-      :unlikelyCandidatesRe   => /combx|comment|community|disqus|extra|foot|footer|header|menu|remark|rss|shoutbox|sidebar|sponsor|ad-break|agegate|pagination|pager|popup|search/i,
-      :okMaybeItsACandidateRe => /and|article|body|column|main|shadow/i,
-      :positiveRe             => /article|body|content|entry|hentry|main|page|pagination|post|text|blog|story/i,
-      :negativeRe             => /combx|comment|com-|contact|foot|footer|footnote|masthead|media|meta|outbrain|promo|related|scroll|shoutbox|sidebar|sponsor|shopping|tags|tool|widget/i,
-      :divToPElementsRe       => /<(a|blockquote|dl|div|img|ol|p|pre|table|ul)/i,
-      :replaceBrsRe           => /(?<content>.*)(<br[^>]*>[ \n\r\t]*){2,}/i,
-      :replaceFontsRe         => /<(\/?)font[^>]*>/i,
-      :trimRe                 => /^\s+|\s+$/,
-      :normalizeRe            => /\s{2,}/,
-      :killBreaksRe           => /(<br\s*\/?>(\s|&nbsp;?)*){1,}/,
-      :videoRe                => /http:\/\/(www\.)?(youtube|vimeo)\.com/i,
+      :unlikely_candidates      => /combx|comment|community|disqus|extra|foot|footer|header|menu|remark|rss|shoutbox|sidebar|sponsor|ad-break|agegate|pagination|pager|popup|search/i,
+      :ok_maybe_its_a_candidate => /and|article|body|column|main|shadow/i,
+      :positive                 => /article|body|content|entry|hentry|main|page|pagination|post|text|blog|story/i,
+      :negative                 => /combx|comment|com-|contact|foot|footer|footnote|masthead|media|meta|outbrain|promo|related|scroll|shoutbox|sidebar|sponsor|shopping|tags|tool|widget/i,
+      :div_to_p_elements        => /<(a|blockquote|dl|div|img|ol|p|pre|table|ul)/i,
+      :replace_brs              => /(?<content>.*)(<br[^>]*>[ \n\r\t]*){2,}/i,
+      :replace_fonts            => /<(\/?)font[^>]*>/i,
+      :trim                     => /^\s+|\s+$/,
+      :normalize                => /\s{2,}/,
+      :kill_breaks              => /(<br\s*\/?>(\s|&nbsp;?)*){1,}/,
+      :video                    => /http:\/\/(www\.)?(youtube|vimeo)\.com/i,
     }
 
     property :options, :html, :best_candidate_has_image
@@ -30,12 +30,12 @@ module Readability
       # Convert '.classname' as '[@class="classname"]'
       query = query.gsub /\.([A-z0-9]+-*_*)+/ { |m| "[@class=\"%s\"]" % m.delete('.') }
       # Convert ' > ' as '/'
-      query = query.gsub /\s*>\s*/ { |m| "/" }
+      query = query.gsub /\s*>\s*/, '/'
       # Convert ' ' as '//'
-      query = query.gsub " ", "//"
+      query = query.gsub ' ', "//"
       # a leading '*' when xpath does not include node name
-      query = query.gsub /\/\[/ { |m| "/*[" }
-      return query
+      query = query.gsub /\/\[/, "/*["
+      query
     end
 
     def self.html_from_input(input, options = XML::HTMLParserOptions::NODEFDTD)
@@ -45,14 +45,14 @@ module Readability
       html = XML.parse_html("<body />") unless html.xpath_node("//body")
 
       # Remove html comment tags
-      html.xpath_nodes("//comment()").each { |i| i.unlink }
+      html.xpath_nodes("//comment()").each &.unlink
       html
     end
 
     def initialize(@input : String, options = Options.new)
       @input = "<body />" if @input.empty?
       @options = options
-      @input = @input.gsub(REGEXES[:replaceBrsRe], "<p>\\k<content></p>").gsub(REGEXES[:replaceFontsRe], "<\1span>").gsub(/\s{2,}/, " ")
+      @input = @input.gsub(REGEXES[:replace_brs], "<p>\\k<content></p>").gsub(REGEXES[:replace_fonts], "<\1span>").gsub(/\s{2,}/, " ")
       @remove_unlikely_candidates = options.remove_unlikely_candidates
       @weight_classes = options.weight_classes
       @clean_conditionally = options.clean_conditionally
@@ -65,7 +65,7 @@ module Readability
     def meta_image
       @html
         .xpath_node("//meta[@name='twitter:image' or @name='twitter:image:src' or @property='twitter:image']")
-        .try { |node| node["content"]? }
+        .try(&.["content"]?)
     end
 
     # Look through the @html document looking for the author
@@ -120,17 +120,19 @@ module Readability
 
     def title
       title = @html.xpath_node("//title")
-      title ? title.text : nil
+      title.try(&.text)
     end
 
     def content(remove_unlikely_candidates = :default)
       @remove_unlikely_candidates = false if remove_unlikely_candidates == false
 
       prepare_candidates
+
       candidates = score_paragraphs(options.min_text_length)
       best_candidate = select_best_candidate(candidates)
       article = get_article(candidates, best_candidate)
       cleaned_article = sanitize(article, candidates)
+
       if article.text.strip.size < options.retry_length
         if @remove_unlikely_candidates
           @remove_unlikely_candidates = false
@@ -151,7 +153,7 @@ module Readability
 
     # This method only touches @html instance variable
     def prepare_candidates
-      @html.xpath_nodes("//script|//style").each { |i| i.unlink }
+      @html.xpath_nodes("//script|//style").each &.unlink
       remove_unlikely_candidates! if @remove_unlikely_candidates
       transform_misused_divs_into_paragraphs!
     end
@@ -171,7 +173,7 @@ module Readability
           candidates[grand_parent_node] ||= score_node(grand_parent_node) if grand_parent_node
 
           content_score = 1
-          content_score += inner_text.split(",").size
+          content_score += inner_text.split(',').size
           content_score += [(inner_text.size / 100).to_i, 3].min
 
           candidates[parent_node].score += content_score
@@ -222,21 +224,22 @@ module Readability
                    end
         end
         if append
-          sibling_dup = sibling.dup # otherwise the state of the document in processing will change, thus creating side effects
+          # otherwise the state of the document in processing will change, thus creating side effects
+          sibling_dup = sibling.dup
           sibling_dup.name = "div" unless %w[div p].includes?(sibling.name.downcase)
           output += sibling_dup.to_xml(options: SAVE_OPTS)
         end
       end
       output = XML.parse_html(output, options: PARSE_OPTS)
 
-      #debug("-"*20 + "OUTPUT" + "-"*20)
-      #debug(output.to_xml(options: SAVE_OPTS))
+      # debug("-" * 20 + "OUTPUT" + "-" * 20)
+      # debug(output.to_xml(options: SAVE_OPTS))
 
       output
     end
 
     def get_link_density(elem)
-      link_length = elem.xpath_nodes("descendant::node()").flat_map { |el| el.name == "a" ? el.text : "" }.join("").size
+      link_length = elem.xpath_nodes("descendant::node()").flat_map { |el| el.name == "a" ? el.text : "" }.join.size
       text_length = elem.text.size
       link_length / text_length.to_f
     end
@@ -246,13 +249,13 @@ module Readability
       return weight unless @weight_classes
 
       if e && e["class"]? && e["class"] != ""
-        weight -= 25 if e["class"] =~ REGEXES[:negativeRe]
-        weight += 25 if e["class"] =~ REGEXES[:positiveRe]
+        weight -= 25 if e["class"] =~ REGEXES[:negative]
+        weight += 25 if e["class"] =~ REGEXES[:positive]
       end
 
       if e && e["id"]? && e["id"] != ""
-        weight -= 25 if e["id"] =~ REGEXES[:negativeRe]
-        weight += 25 if e["id"] =~ REGEXES[:positiveRe]
+        weight -= 25 if e["id"] =~ REGEXES[:negative]
+        weight += 25 if e["id"] =~ REGEXES[:positive]
       end
 
       weight
@@ -278,7 +281,7 @@ module Readability
     def remove_unlikely_candidates!
       @html.xpath_nodes("//*").each do |elem|
         str = "#{elem["class"]?}#{elem["id"]?}"
-        if str =~ REGEXES[:unlikelyCandidatesRe] && str !~ REGEXES[:okMaybeItsACandidateRe] && (elem.name.downcase != "html") && (elem.name.downcase != "body")
+        if str =~ REGEXES[:unlikely_candidates] && str !~ REGEXES[:ok_maybe_its_a_candidate] && (elem.name.downcase != "html") && (elem.name.downcase != "body")
           debug("Removing unlikely candidate - #{str}")
           elem.unlink
         end
@@ -287,7 +290,7 @@ module Readability
 
     def transform_misused_divs_into_paragraphs!
       @html.xpath_nodes("//*").each do |elem|
-        if elem.name.downcase == "div" && elem.children.to_s !~ REGEXES[:divToPElementsRe]
+        if elem.name.downcase == "div" && elem.children.to_s !~ REGEXES[:div_to_p_elements]
           # transform <div>s that do not contain other block elements into <p>s
           debug("Altering div(##{elem["id"]?}.#{elem["class"]?}) to p")
           elem.name = "p"
@@ -301,9 +304,7 @@ module Readability
         header.unlink if !options.tags.includes?(header.name) && (class_weight(header) < 0 || get_link_density(header) > 0.33)
       end
 
-      node.xpath_nodes("//form|//object|//iframe|//embed").each do |elem|
-        elem.unlink
-      end
+      node.xpath_nodes("//form|//object|//iframe|//embed").each &.unlink
 
       if options.remove_empty_nodes
         # remove <p> tags that have no text content - this will also remove p tags that contain only images.
@@ -315,13 +316,13 @@ module Readability
       # Conditionally clean <table>s, <ul>s, and <div>s
       clean_conditionally(node, candidates, "//table|//ul|//div")
 
-      # We"ll sanitize all elements using a whitelist
+      # We'll sanitize all elements using a whitelist
       base_whitelist = options.tags || %w[div p]
-      # We"ll add whitespace instead of block elements,
+      # We'll add whitespace instead of block elements,
       # so a<br>b will have a nice space between them
       base_replace_with_whitespace = %w[br hr h1 h2 h3 h4 h5 h6 dl dd ol li ul address blockquote center]
 
-      # Use a hash for speed (don"t want to make a million calls to includes?)
+      # Use a hash for speed (don't want to make a million calls to includes?)
       whitelist = Hash(String, Bool).new
       base_whitelist.each { |tag| whitelist[tag] = true }
       replace_with_whitespace = Hash(String, Bool).new
@@ -353,7 +354,7 @@ module Readability
       html ||= node.to_xml(options: SAVE_OPTS)
 
       # Get rid of duplicate whitespace
-      return html.gsub(/[\r\n\f]+/, "\n").gsub("&nbsp;", " ").strip
+      return html.gsub(/[\r\n\f]+/, '\n').gsub("&nbsp;", ' ').strip
     end
 
     def clean_conditionally(node, candidates, selector)
@@ -366,14 +367,15 @@ module Readability
         if weight + content_score < 0
           el.unlink
           debug("Conditionally cleaned #{name}##{el["id"]?}.#{el["class"]?} with weight #{weight} and content score #{content_score} because score + content score was less than zero.")
-        elsif el.text.count(",") < 10
+        elsif el.text.count(',') < 10
           counts = %w[p img li a embed input].reduce({} of String => Int32) { |m, kind| m[kind] = el.xpath_nodes("//#{kind}").size; m }
           counts["li"] -= 100
 
           # For every img under a noscript tag discount one from the count to avoid double counting
           counts["img"] -= el.xpath_nodes("//noscript").reduce(0) { |sum, node| node.xpath_nodes("//img").size }
 
-          content_length = el.text.strip.size # Count the text length excluding any surrounding whitespace
+          # Count the text length excluding any surrounding whitespace
+          content_length = el.text.strip.size
           link_density = get_link_density(el)
 
           reason = clean_conditionally_reason?(name, counts, content_length, weight, link_density)
